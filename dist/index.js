@@ -50,12 +50,12 @@ class Options {
     githubConcurrencyLimit;
     constructor(params) {
         this.openaiApiBaseUrl = params.openaiApiBaseUrl;
-        this.openaiModel = Options.parseGptModel(params.openai_Model);
+        this.openaiModel = Options.parseGptModel(params.openaiModel);
         this.openaiModelTemperature = parseFloat(params.openaiModelTemperature);
-        this.openaiRetries = parseInt(params.openai_Retries);
+        this.openaiRetries = parseInt(params.openaiRetries);
         this.openaiTimeoutMs = parseInt(params.openaiTimeoutMs);
         this.openaiConcurrencyLimit = parseInt(params.openaiConcurrencyLimit);
-        this.githubConcurrencyLimit = parseInt(params.github_Concurrency_Limit);
+        this.githubConcurrencyLimit = parseInt(params.githubConcurrencyLimit);
     }
     static parseGptModel(model) {
         switch (model) {
@@ -43838,13 +43838,13 @@ const reviewer_1 = __nccwpck_require__(3187);
         const repo = context.repo;
         if ((0, utils_1.canRun)(context)) {
             const options = new options_1.Options({
-                openai_Model: (0, core_1.getInput)('openai_model'),
+                openaiModel: (0, core_1.getInput)('openai_model'),
                 openaiApiBaseUrl: (0, core_1.getInput)('openai_api_base_url'),
                 openaiConcurrencyLimit: (0, core_1.getInput)('openai_concurrency_limit'),
                 openaiModelTemperature: (0, core_1.getInput)('openai_model_temperature'),
-                openai_Retries: (0, core_1.getInput)('openai_retries'),
+                openaiRetries: (0, core_1.getInput)('openai_retries'),
                 openaiTimeoutMs: (0, core_1.getInput)('openai_timeout_ms'),
-                github_Concurrency_Limit: (0, core_1.getInput)('github_concurrency_limit'),
+                githubConcurrencyLimit: (0, core_1.getInput)('github_concurrency_limit'),
             });
             const targetBranchDiff = await octokit_1.octokit.repos.compareCommits({
                 owner: repo.owner,
@@ -43852,13 +43852,17 @@ const reviewer_1 = __nccwpck_require__(3187);
                 base: context.payload.pull_request.base.sha,
                 head: context.payload.pull_request.head.sha,
             });
+            (0, core_1.info)(`Running with options: ${JSON.stringify(options)}`);
             const { files: changedFiles, commits } = targetBranchDiff.data;
             if (!changedFiles?.length) {
                 (0, core_1.info)('No changed files found');
                 return;
             }
             (0, core_1.info)(`Found ${changedFiles.length} changed files`);
+            (0, core_1.info)(`Changed files: ${JSON.stringify(changedFiles)}`);
             const acceptedFiles = (0, utils_1.filterAcceptedFiles)(changedFiles);
+            (0, core_1.info)(`Found ${acceptedFiles.length} accepted files`);
+            (0, core_1.info)(`Accepted files: ${JSON.stringify(acceptedFiles)}`);
             const reviewer = new reviewer_1.Reviewer(options);
             await reviewer.review(acceptedFiles, commits, context);
         }
