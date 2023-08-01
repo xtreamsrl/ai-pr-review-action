@@ -1,0 +1,38 @@
+name: 'xtream AI-based PR Reviewer'
+description: 'xtream AI-based PR Reviewer'
+branding:
+  icon: 'git-merge'
+  color: 'blue'
+author: 'xtream srl'
+inputs:
+  openai_api_base_url:
+    required: false
+    description: 'The url of the openai api interface.'
+    default: 'https://api.openai.com/v1'
+  openai_model:
+    required: false
+    description: 'GPT Model to use'
+    default: 'gpt-3.5-turbo'
+  openai_model_temperature:
+    required: false
+    description: 'Temperature for GPT model'
+    default: '0.05'
+  openai_retries:
+    required: false
+    description: 'How many times to retry OpenAI API in case of timeouts or errors?'
+    default: '5'
+  openai_timeout_ms:
+    required: false
+    description: 'Timeout for OpenAI API call in millis'
+    default: '360000'
+  openai_concurrency_limit:
+    required: false
+    description: 'How many concurrent API calls to make to OpenAI servers?'
+    default: '6'
+  github_concurrency_limit:
+    required: false
+    description: 'How many concurrent API calls to make to GitHub?'
+    default: '6'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'

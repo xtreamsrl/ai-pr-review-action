@@ -1,0 +1,22 @@
+on:
+  pull_request_target:
+    types:
+      - opened
+
+jobs:
+  ai-pr-review:
+    runs-on: ubuntu-latest
+    name: AI PR Reviewer
+    steps:
+      # To use this repository's private action,
+      # you must check out the repository
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: AI PR Reviewer
+        uses: ./ # Uses an action in the root directory
+        id: ai-pr-review
+        with:
+          openai_model: 'gpt-3.5-turbo'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
