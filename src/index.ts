@@ -28,13 +28,17 @@ import { Reviewer } from './reviewer';
         base: context.payload.pull_request.base.sha,
         head: context.payload.pull_request.head.sha,
       });
+      info(`Running with options: ${JSON.stringify(options)}`);
       const { files: changedFiles, commits } = targetBranchDiff.data;
       if (!changedFiles?.length) {
         info('No changed files found');
         return;
       }
       info(`Found ${changedFiles.length} changed files`);
+      info(`Changed files: ${JSON.stringify(changedFiles)}`);
       const acceptedFiles = filterAcceptedFiles(changedFiles);
+      info(`Found ${acceptedFiles.length} accepted files`);
+      info(`Accepted files: ${JSON.stringify(acceptedFiles)}`);
       const reviewer = new Reviewer(options);
       await reviewer.review(acceptedFiles, commits, context);
     }
