@@ -26,11 +26,11 @@ export class BasePrompt {
   }
 }
 
-export const basePrompt = new BasePrompt(require('./prompts/base-prompt.json'));
+export const basePrompt = new BasePrompt(require('./prompts/base-prompt'));
 export const prompts = [
-  new ReviewPrompt(require('./prompts/modernize-code-prompt.json')),
-  new ReviewPrompt(require('./prompts/srp-prompt.json')),
-  new ReviewPrompt(require('./prompts/variable-naming-prompt.json')),
+  new ReviewPrompt(require('./prompts/modernize-code-prompt')),
+  new ReviewPrompt(require('./prompts/srp-prompt')),
+  new ReviewPrompt(require('./prompts/variable-naming-prompt')),
 ];
 
 export class InputPrompt {
