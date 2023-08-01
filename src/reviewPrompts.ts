@@ -1,3 +1,8 @@
+import { basePrompt } from './prompts/base-prompt';
+import { modernizeCodePrompt } from './prompts/modernize-code-prompt';
+import { srpPrompt } from './prompts/srp-prompt';
+import { variableNamingPrompt } from './prompts/variable-naming-prompt';
+
 export class ReviewPrompt {
   readonly goal: string;
   readonly name: string;
@@ -11,7 +16,7 @@ export class ReviewPrompt {
   }
 }
 
-export class BasePrompt {
+export class TemplatePrompt {
   private readonly promptTemplate: string;
   constructor(params: {
     promptTemplate: string;
@@ -26,11 +31,11 @@ export class BasePrompt {
   }
 }
 
-export const basePrompt = new BasePrompt(require('./prompts/base-prompt'));
-export const prompts = [
-  new ReviewPrompt(require('./prompts/modernize-code-prompt')),
-  new ReviewPrompt(require('./prompts/srp-prompt')),
-  new ReviewPrompt(require('./prompts/variable-naming-prompt')),
+export const templatePrompt = new TemplatePrompt(basePrompt);
+export const reviewPrompts = [
+  new ReviewPrompt(modernizeCodePrompt),
+  new ReviewPrompt(srpPrompt),
+  new ReviewPrompt(variableNamingPrompt),
 ];
 
 export class InputPrompt {
@@ -50,10 +55,10 @@ export class InputPrompt {
 }
 
 export class PromptFactory {
-  private readonly basePrompt: BasePrompt;
+  private readonly basePrompt: TemplatePrompt;
 
   constructor(params: {
-    basePrompt: BasePrompt;
+    basePrompt: TemplatePrompt;
   }) {
     this.basePrompt = params.basePrompt;
   }

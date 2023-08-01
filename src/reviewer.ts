@@ -1,6 +1,6 @@
 import { Options } from './options';
 import pLimit, { LimitFunction } from 'p-limit';
-import { basePrompt, InputPrompt, PromptFactory, prompts } from './prompts';
+import { templatePrompt, InputPrompt, PromptFactory, reviewPrompts } from './reviewPrompts';
 import { openaiClient } from './openaiClient';
 import { octokit } from './octokit';
 import { ContextWithPullRequest } from './utils';
@@ -14,8 +14,8 @@ type ReviewComment = {
 
 export class Reviewer {
   private readonly options: Options;
-  private readonly basePrompt = basePrompt;
-  private readonly reviewPrompts = prompts;
+  private readonly basePrompt = templatePrompt;
+  private readonly reviewPrompts = reviewPrompts;
   private readonly openaiConcurrencyLimit: LimitFunction;
   private readonly githubConcurrencyLimit: LimitFunction;
   private readonly promptFactory: PromptFactory;

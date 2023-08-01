@@ -73,77 +73,14 @@ exports.Options = Options;
 
 /***/ }),
 
-/***/ 4272:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.PromptFactory = exports.InputPrompt = exports.prompts = exports.basePrompt = exports.BasePrompt = exports.ReviewPrompt = void 0;
-class ReviewPrompt {
-    goal;
-    name;
-    constructor(params) {
-        this.goal = params.goal;
-        this.name = params.name;
-    }
-}
-exports.ReviewPrompt = ReviewPrompt;
-class BasePrompt {
-    promptTemplate;
-    constructor(params) {
-        this.promptTemplate = params.promptTemplate;
-    }
-    build(reviewPrompt, diff) {
-        return this.promptTemplate
-            .replace('{goal}', reviewPrompt.goal)
-            .replace('{diff}', diff);
-    }
-}
-exports.BasePrompt = BasePrompt;
-exports.basePrompt = new BasePrompt(__nccwpck_require__(2562));
-exports.prompts = [
-    new ReviewPrompt(__nccwpck_require__(9344)),
-    new ReviewPrompt(__nccwpck_require__(7817)),
-    new ReviewPrompt(__nccwpck_require__(8959)),
-];
-class InputPrompt {
-    prompt;
-    fileName;
-    patch;
-    constructor(params) {
-        this.prompt = params.prompt;
-        this.fileName = params.fileName;
-        this.patch = params.patch;
-    }
-}
-exports.InputPrompt = InputPrompt;
-class PromptFactory {
-    basePrompt;
-    constructor(params) {
-        this.basePrompt = params.basePrompt;
-    }
-    build(file, reviewPrompt) {
-        return new InputPrompt({
-            prompt: this.basePrompt.build(reviewPrompt, file.patch),
-            fileName: file.filename,
-            patch: file.patch,
-        });
-    }
-}
-exports.PromptFactory = PromptFactory;
-
-
-/***/ }),
-
 /***/ 2562:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.srpPrompt = void 0;
-exports.srpPrompt = {
+exports.basePrompt = void 0;
+exports.basePrompt = {
     promptTemplate: "You are a function (input) -> string || null, operating on Github PRs.\nYour input is a file diff in git format and the original file (when applicable) for reference.\nYour goal is ${goal}.\n\nYour output is null when there is no need to comment because the code looks good.\n\nWhen you do generate a string for commenting, consider these requirements:\n- be concise, use short sentences and abbreviations\n- use a developer tone of voice\n- be empathic towards the original author\n- limit your review to the scope of the diff\n- minimise the comment size\n\nThis is the diff to comment:\n\n ${diff}"
 };
 
@@ -195,6 +132,73 @@ exports.variableNamingPrompt = {
 
 /***/ }),
 
+/***/ 6432:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.PromptFactory = exports.InputPrompt = exports.reviewPrompts = exports.templatePrompt = exports.TemplatePrompt = exports.ReviewPrompt = void 0;
+const base_prompt_1 = __nccwpck_require__(2562);
+const modernize_code_prompt_1 = __nccwpck_require__(9344);
+const srp_prompt_1 = __nccwpck_require__(7817);
+const variable_naming_prompt_1 = __nccwpck_require__(8959);
+class ReviewPrompt {
+    goal;
+    name;
+    constructor(params) {
+        this.goal = params.goal;
+        this.name = params.name;
+    }
+}
+exports.ReviewPrompt = ReviewPrompt;
+class TemplatePrompt {
+    promptTemplate;
+    constructor(params) {
+        this.promptTemplate = params.promptTemplate;
+    }
+    build(reviewPrompt, diff) {
+        return this.promptTemplate
+            .replace('{goal}', reviewPrompt.goal)
+            .replace('{diff}', diff);
+    }
+}
+exports.TemplatePrompt = TemplatePrompt;
+exports.templatePrompt = new TemplatePrompt(base_prompt_1.basePrompt);
+exports.reviewPrompts = [
+    new ReviewPrompt(modernize_code_prompt_1.modernizeCodePrompt),
+    new ReviewPrompt(srp_prompt_1.srpPrompt),
+    new ReviewPrompt(variable_naming_prompt_1.variableNamingPrompt),
+];
+class InputPrompt {
+    prompt;
+    fileName;
+    patch;
+    constructor(params) {
+        this.prompt = params.prompt;
+        this.fileName = params.fileName;
+        this.patch = params.patch;
+    }
+}
+exports.InputPrompt = InputPrompt;
+class PromptFactory {
+    basePrompt;
+    constructor(params) {
+        this.basePrompt = params.basePrompt;
+    }
+    build(file, reviewPrompt) {
+        return new InputPrompt({
+            prompt: this.basePrompt.build(reviewPrompt, file.patch),
+            fileName: file.filename,
+            patch: file.patch,
+        });
+    }
+}
+exports.PromptFactory = PromptFactory;
+
+
+/***/ }),
+
 /***/ 3187:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -206,13 +210,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Reviewer = void 0;
 const p_limit_1 = __importDefault(__nccwpck_require__(3783));
-const prompts_1 = __nccwpck_require__(4272);
+const reviewPrompts_1 = __nccwpck_require__(6432);
 const openaiClient_1 = __nccwpck_require__(8426);
 const octokit_1 = __nccwpck_require__(3258);
 class Reviewer {
     options;
-    basePrompt = prompts_1.basePrompt;
-    reviewPrompts = prompts_1.prompts;
+    basePrompt = reviewPrompts_1.templatePrompt;
+    reviewPrompts = reviewPrompts_1.reviewPrompts;
     openaiConcurrencyLimit;
     githubConcurrencyLimit;
     promptFactory;
@@ -220,7 +224,7 @@ class Reviewer {
         this.options = options;
         this.openaiConcurrencyLimit = (0, p_limit_1.default)(options.openaiConcurrencyLimit);
         this.githubConcurrencyLimit = (0, p_limit_1.default)(options.githubConcurrencyLimit);
-        this.promptFactory = new prompts_1.PromptFactory({
+        this.promptFactory = new reviewPrompts_1.PromptFactory({
             basePrompt: this.basePrompt,
         });
     }
