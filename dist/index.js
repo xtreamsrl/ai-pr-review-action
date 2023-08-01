@@ -23,7 +23,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.openaiClient = void 0;
 const openai_1 = __nccwpck_require__(9211);
 const configuration = new openai_1.Configuration({
-    apiKey: "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",
+    apiKey: process.env.OPENAI_API_KEY,
 });
 exports.openaiClient = new openai_1.OpenAIApi(configuration);
 
@@ -50,12 +50,12 @@ class Options {
     githubConcurrencyLimit;
     constructor(params) {
         this.openaiApiBaseUrl = params.openaiApiBaseUrl;
-        this.openaiModel = Options.parseGptModel(params.openaiModel);
+        this.openaiModel = Options.parseGptModel(params.openai_Model);
         this.openaiModelTemperature = parseFloat(params.openaiModelTemperature);
-        this.openaiRetries = parseInt(params.openaiRetries);
+        this.openaiRetries = parseInt(params.openai_Retries);
         this.openaiTimeoutMs = parseInt(params.openaiTimeoutMs);
         this.openaiConcurrencyLimit = parseInt(params.openaiConcurrencyLimit);
-        this.githubConcurrencyLimit = parseInt(params.githubConcurrencyLimit);
+        this.githubConcurrencyLimit = parseInt(params.github_Concurrency_Limit);
     }
     static parseGptModel(model) {
         switch (model) {
@@ -101,11 +101,11 @@ class BasePrompt {
     }
 }
 exports.BasePrompt = BasePrompt;
-exports.basePrompt = new BasePrompt(__nccwpck_require__(1600));
+exports.basePrompt = new BasePrompt(__nccwpck_require__(2562));
 exports.prompts = [
-    new ReviewPrompt(__nccwpck_require__(9932)),
-    new ReviewPrompt(__nccwpck_require__(6503)),
-    new ReviewPrompt(__nccwpck_require__(7301)),
+    new ReviewPrompt(__nccwpck_require__(9344)),
+    new ReviewPrompt(__nccwpck_require__(7817)),
+    new ReviewPrompt(__nccwpck_require__(8959)),
 ];
 class InputPrompt {
     prompt;
@@ -132,6 +132,65 @@ class PromptFactory {
     }
 }
 exports.PromptFactory = PromptFactory;
+
+
+/***/ }),
+
+/***/ 2562:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.srpPrompt = void 0;
+exports.srpPrompt = {
+    promptTemplate: "You are a function (input) -> string || null, operating on Github PRs.\nYour input is a file diff in git format and the original file (when applicable) for reference.\nYour goal is ${goal}.\n\nYour output is null when there is no need to comment because the code looks good.\n\nWhen you do generate a string for commenting, consider these requirements:\n- be concise, use short sentences and abbreviations\n- use a developer tone of voice\n- be empathic towards the original author\n- limit your review to the scope of the diff\n- minimise the comment size\n\nThis is the diff to comment:\n\n ${diff}"
+};
+
+
+/***/ }),
+
+/***/ 9344:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.modernizeCodePrompt = void 0;
+exports.modernizeCodePrompt = {
+    goal: "to spot code that can be modernised (using newer standards)",
+    name: "code modernization"
+};
+
+
+/***/ }),
+
+/***/ 7817:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.srpPrompt = void 0;
+exports.srpPrompt = {
+    goal: "to spot (severe only) violations to the single responsibility principles",
+    name: "SRP"
+};
+
+
+/***/ }),
+
+/***/ 8959:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.variableNamingPrompt = void 0;
+exports.variableNamingPrompt = {
+    goal: " to spot bad naming to classes, methods, variables and properties (based on readability and code style principles) and generate comments for the diff",
+    name: "variable naming"
+};
 
 
 /***/ }),
@@ -43292,38 +43351,6 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 1600:
-/***/ ((module) => {
-
-module.exports = eval("require")("./prompts/base-prompt.json");
-
-
-/***/ }),
-
-/***/ 9932:
-/***/ ((module) => {
-
-module.exports = eval("require")("./prompts/modernize-code-prompt.json");
-
-
-/***/ }),
-
-/***/ 6503:
-/***/ ((module) => {
-
-module.exports = eval("require")("./prompts/srp-prompt.json");
-
-
-/***/ }),
-
-/***/ 7301:
-/***/ ((module) => {
-
-module.exports = eval("require")("./prompts/variable-naming-prompt.json");
-
-
-/***/ }),
-
 /***/ 9975:
 /***/ ((module) => {
 
@@ -43811,13 +43838,13 @@ const reviewer_1 = __nccwpck_require__(3187);
         const repo = context.repo;
         if ((0, utils_1.canRun)(context)) {
             const options = new options_1.Options({
-                openaiModel: (0, core_1.getInput)('openai_model'),
+                openai_Model: (0, core_1.getInput)('openai_model'),
                 openaiApiBaseUrl: (0, core_1.getInput)('openai_api_base_url'),
                 openaiConcurrencyLimit: (0, core_1.getInput)('openai_concurrency_limit'),
                 openaiModelTemperature: (0, core_1.getInput)('openai_model_temperature'),
-                openaiRetries: (0, core_1.getInput)('openai_retries'),
+                openai_Retries: (0, core_1.getInput)('openai_retries'),
                 openaiTimeoutMs: (0, core_1.getInput)('openai_timeout_ms'),
-                githubConcurrencyLimit: (0, core_1.getInput)('github_concurrency_limit'),
+                github_Concurrency_Limit: (0, core_1.getInput)('github_concurrency_limit'),
             });
             const targetBranchDiff = await octokit_1.octokit.repos.compareCommits({
                 owner: repo.owner,
