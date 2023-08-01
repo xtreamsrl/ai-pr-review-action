@@ -4,6 +4,7 @@ import { templatePrompt, InputPrompt, PromptFactory, reviewPrompts } from './rev
 import { openaiClient } from './openaiClient';
 import { octokit } from './octokit';
 import { ContextWithPullRequest } from './utils';
+import { info } from '@actions/core';
 
 type ReviewComment = {
   comment: string;
@@ -66,9 +67,12 @@ export class Reviewer {
 
   async review(acceptedFiles: { patch: string, filename: string }[], commits: { sha: string }[], context: ContextWithPullRequest): Promise<void> {
     const prompts = this.buildPrompts(acceptedFiles);
+    info(`Generated ${prompts.length} prompts`);
     const reviewPromises = prompts.map((prompt) => this.openaiConcurrencyLimit(() => this.getCommentFromGPT(prompt)));
     const reviewComments = await Promise.all(reviewPromises);
+    info(`Generated ${reviewComments.length} comments`);
     const comments = reviewComments.filter((comment) => comment.comment !== 'null');
+    info(`Filtered (non 'null') ${comments.length} comments`);
     const commentsPromises = comments.map((comment) => this.githubConcurrencyLimit(() => this.postComment(comment, commits, context)));
     await Promise.all(commentsPromises);
   }

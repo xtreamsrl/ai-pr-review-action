@@ -35,10 +35,10 @@ import { Reviewer } from './reviewer';
         return;
       }
       info(`Found ${changedFiles.length} changed files`);
-      info(`Changed files: ${JSON.stringify(changedFiles)}`);
+      info(`Changed files: ${JSON.stringify(changedFiles.map((file) => file.filename))}`);
       const acceptedFiles = filterAcceptedFiles(changedFiles);
       info(`Found ${acceptedFiles.length} accepted files`);
-      info(`Accepted files: ${JSON.stringify(acceptedFiles)}`);
+      info(`Accepted files: ${JSON.stringify(acceptedFiles.map((file) => file.filename))}`);
       const reviewer = new Reviewer(options);
       await reviewer.review(acceptedFiles, commits, context);
     }
