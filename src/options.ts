@@ -13,20 +13,20 @@ export class Options {
 
   constructor(params: {
     openaiApiBaseUrl: string;
-    openaiModel: string;
+    openai_Model: string;
     openaiModelTemperature: string;
-    openaiRetries: string;
+    openai_Retries: string;
     openaiTimeoutMs: string;
     openaiConcurrencyLimit: string;
-    githubConcurrencyLimit: string;
+    github_Concurrency_Limit: string;
   }) {
     this.openaiApiBaseUrl = params.openaiApiBaseUrl;
-    this.openaiModel = Options.parseGptModel(params.openaiModel);
+    this.openaiModel = Options.parseGptModel(params.openai_Model);
     this.openaiModelTemperature = parseFloat(params.openaiModelTemperature);
-    this.openaiRetries = parseInt(params.openaiRetries);
+    this.openaiRetries = parseInt(params.openai_Retries);
     this.openaiTimeoutMs = parseInt(params.openaiTimeoutMs);
     this.openaiConcurrencyLimit = parseInt(params.openaiConcurrencyLimit);
-    this.githubConcurrencyLimit = parseInt(params.githubConcurrencyLimit);
+    this.githubConcurrencyLimit = parseInt(params.github_Concurrency_Limit);
   }
 
   private static parseGptModel(model: string): 'gpt-4' | 'gpt-3.5-turbo' {
