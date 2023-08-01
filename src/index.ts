@@ -12,13 +12,13 @@ import { Reviewer } from './reviewer';
 
     if (canRun(context)) {
       const options: Options = new Options({
-        openaiModel: getInput('openai_model'),
+        openai_Model: getInput('openai_model'),
         openaiApiBaseUrl: getInput('openai_api_base_url'),
         openaiConcurrencyLimit: getInput('openai_concurrency_limit'),
         openaiModelTemperature: getInput('openai_model_temperature'),
-        openaiRetries: getInput('openai_retries'),
+        openai_Retries: getInput('openai_retries'),
         openaiTimeoutMs: getInput('openai_timeout_ms'),
-        githubConcurrencyLimit: getInput('github_concurrency_limit'),
+        github_Concurrency_Limit: getInput('github_concurrency_limit'),
       });
 
       // Fetch the diff between the target branch's base commit and the latest commit of the PR branch
