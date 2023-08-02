@@ -4,7 +4,7 @@
   "description": "xtream AI-based PR Reviewer",
   "scripts": {
     "build": "tsc",
-    "package": "ncc build ./lib/index.js --license licenses.txt"
+    "package": "cp ./src/commentSchema.ts ./dist/commentSchema.ts && ncc build ./lib/index.js --license licenses.txt"
   },
   "keywords": [],
   "author": "",
