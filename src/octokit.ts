@@ -8,7 +8,8 @@ const generateCommentData = (comment: ReviewComment) => {
   return {
     path: comment.fileName,
     body: comment.message,
-    position: comment.patch.split('\n').length - 1,
+    start_line: comment.startLine,
+    start_side: comment.startSide,
   }
 }
 

@@ -15,9 +15,6 @@ import { Reviewer } from './reviewer';
       const options: Options = new Options({
         openaiModel: process.env.OPENAI_MODEL!,
         openaiApiBaseUrl: process.env.OPENAI_API_BASE_URL!,
-        openaiConcurrencyLimit: process.env.OPENAI_CONCURRENCY_LIMIT!,
-        openaiModelTemperature: process.env.OPENAI_MODEL_TEMPERATURE!,
-        githubConcurrencyLimit: process.env.GITHUB_CONCURRENCY_LIMIT!,
       });
       info(`Running with options: ${JSON.stringify(options)}`);
 
