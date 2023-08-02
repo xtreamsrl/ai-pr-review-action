@@ -6,8 +6,6 @@ export class Options {
   openaiApiBaseUrl: string;
   openaiModel: 'gpt-4' | 'gpt-3.5-turbo';
   openaiModelTemperature: number;
-  openaiRetries: number;
-  openaiTimeoutMs: number;
   openaiConcurrencyLimit: number;
   githubConcurrencyLimit: number;
 
@@ -15,16 +13,12 @@ export class Options {
     openaiApiBaseUrl: string;
     openaiModel: string;
     openaiModelTemperature: string;
-    openaiRetries: string;
-    openaiTimeoutMs: string;
     openaiConcurrencyLimit: string;
     githubConcurrencyLimit: string;
   }) {
     this.openaiApiBaseUrl = params.openaiApiBaseUrl;
     this.openaiModel = Options.parseGptModel(params.openaiModel);
     this.openaiModelTemperature = parseFloat(params.openaiModelTemperature);
-    this.openaiRetries = parseInt(params.openaiRetries);
-    this.openaiTimeoutMs = parseInt(params.openaiTimeoutMs);
     this.openaiConcurrencyLimit = parseInt(params.openaiConcurrencyLimit);
     this.githubConcurrencyLimit = parseInt(params.githubConcurrencyLimit);
   }

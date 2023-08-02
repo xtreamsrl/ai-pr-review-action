@@ -1,9 +1,9 @@
 import { warning } from '@actions/core';
 import { SUPPORTED_ACTIONS, SUPPORTED_EVENTS, SUPPORTED_FILE_EXTENSIONS } from './options';
-import type { context as GIT_HUB_CONTEXT } from '@actions/github';
+import type { context as GITHUB_CONTEXT } from '@actions/github';
 import path from 'node:path';
 
-type GithubContext = typeof GIT_HUB_CONTEXT;
+type GithubContext = typeof GITHUB_CONTEXT;
 export type ContextWithPullRequest = Omit<GithubContext, 'payload'> & { payload: Required<GithubContext['payload']>}
 
 export function canRun(context: GithubContext): context is ContextWithPullRequest {

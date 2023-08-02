@@ -1,15 +1,96 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 4822:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const options_1 = __nccwpck_require__(1353);
+const core_1 = __nccwpck_require__(2186);
+const github_1 = __nccwpck_require__(5438);
+const octokit_1 = __nccwpck_require__(3258);
+const utils_1 = __nccwpck_require__(918);
+const reviewer_1 = __nccwpck_require__(3187);
+const p_limit_1 = __importDefault(__nccwpck_require__(7684));
+(async () => {
+    try {
+        const context = github_1.context;
+        const repo = context.repo;
+        if ((0, utils_1.canRun)(context)) {
+            const options = new options_1.Options({
+                openaiModel: (0, core_1.getInput)('openai_model'),
+                openaiApiBaseUrl: (0, core_1.getInput)('openai_api_base_url'),
+                openaiConcurrencyLimit: (0, core_1.getInput)('openai_concurrency_limit'),
+                openaiModelTemperature: (0, core_1.getInput)('openai_model_temperature'),
+                githubConcurrencyLimit: (0, core_1.getInput)('github_concurrency_limit'),
+            });
+            (0, core_1.info)(`Running with options: ${JSON.stringify(options)}`);
+            const targetBranchDiff = await octokit_1.octokit.repos.compareCommits({
+                owner: repo.owner,
+                repo: repo.repo,
+                base: context.payload.pull_request.base.sha,
+                head: context.payload.pull_request.head.sha,
+            });
+            const { files: changedFiles, commits } = targetBranchDiff.data;
+            if (!changedFiles?.length) {
+                (0, core_1.info)('No changed files found');
+                return;
+            }
+            (0, core_1.info)(`Found ${changedFiles.length} changed files`);
+            (0, core_1.info)(`Changed files: ${JSON.stringify(changedFiles.map((file) => file.filename))}`);
+            const acceptedFiles = (0, utils_1.filterAcceptedFiles)(changedFiles);
+            (0, core_1.info)(`Found ${acceptedFiles.length} accepted files`);
+            (0, core_1.info)(`Accepted files: ${JSON.stringify(acceptedFiles.map((file) => file.filename))}`);
+            const reviewer = new reviewer_1.Reviewer(options);
+            const comments = await reviewer.getReviewComments(acceptedFiles);
+            (0, core_1.info)(`Posting ${comments.length} review comments`);
+            const githubConcurrencyLimit = (0, p_limit_1.default)(options.githubConcurrencyLimit);
+            const commentsPromises = comments.map((comment) => githubConcurrencyLimit(() => (0, octokit_1.postComment)(comment, commits, context)));
+            await Promise.all(commentsPromises);
+        }
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            (0, core_1.error)(e);
+        }
+        else {
+            (0, core_1.error)(`Failed to run with error: ${e}`);
+        }
+    }
+    finally {
+        (0, core_1.info)('Done');
+    }
+})();
+
+
+/***/ }),
+
 /***/ 3258:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.octokit = void 0;
+exports.postComment = exports.octokit = void 0;
 const action_1 = __nccwpck_require__(1231);
 exports.octokit = new action_1.Octokit();
+async function postComment(comment, commits, context) {
+    return await exports.octokit.pulls.createReviewComment({
+        repo: context.repo.repo,
+        owner: context.repo.owner,
+        pull_number: context.payload.pull_request.number,
+        commit_id: commits[commits.length - 1].sha,
+        path: comment.fileName,
+        body: comment.comment,
+        position: comment.patch.split('\n').length - 1,
+    });
+}
+exports.postComment = postComment;
 
 
 /***/ }),
@@ -44,16 +125,12 @@ class Options {
     openaiApiBaseUrl;
     openaiModel;
     openaiModelTemperature;
-    openaiRetries;
-    openaiTimeoutMs;
     openaiConcurrencyLimit;
     githubConcurrencyLimit;
     constructor(params) {
         this.openaiApiBaseUrl = params.openaiApiBaseUrl;
         this.openaiModel = Options.parseGptModel(params.openaiModel);
         this.openaiModelTemperature = parseFloat(params.openaiModelTemperature);
-        this.openaiRetries = parseInt(params.openaiRetries);
-        this.openaiTimeoutMs = parseInt(params.openaiTimeoutMs);
         this.openaiConcurrencyLimit = parseInt(params.openaiConcurrencyLimit);
         this.githubConcurrencyLimit = parseInt(params.githubConcurrencyLimit);
     }
@@ -73,66 +150,7 @@ exports.Options = Options;
 
 /***/ }),
 
-/***/ 2562:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.basePrompt = void 0;
-exports.basePrompt = {
-    promptTemplate: "You are a function (input) -> string || null, operating on Github PRs.\nYour input is a file diff in git format and the original file (when applicable) for reference.\nYour goal is ${goal}.\n\nYour output is null when there is no need to comment because the code looks good.\n\nWhen you do generate a string for commenting, consider these requirements:\n- be concise, use short sentences and abbreviations\n- use a developer tone of voice\n- be empathic towards the original author\n- limit your review to the scope of the diff\n- minimise the comment size\n\nThis is the diff to comment:\n\n ${diff}"
-};
-
-
-/***/ }),
-
-/***/ 9344:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.modernizeCodePrompt = void 0;
-exports.modernizeCodePrompt = {
-    goal: "to spot code that can be modernised (using newer standards)",
-    name: "code modernization"
-};
-
-
-/***/ }),
-
-/***/ 7817:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.srpPrompt = void 0;
-exports.srpPrompt = {
-    goal: "to spot (severe only) violations to the single responsibility principles",
-    name: "SRP"
-};
-
-
-/***/ }),
-
-/***/ 8959:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.variableNamingPrompt = void 0;
-exports.variableNamingPrompt = {
-    goal: " to spot bad naming to classes, methods, variables and properties (based on readability and code style principles) and generate comments for the diff",
-    name: "variable naming"
-};
-
-
-/***/ }),
-
-/***/ 6432:
+/***/ 4272:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -199,6 +217,65 @@ exports.PromptFactory = PromptFactory;
 
 /***/ }),
 
+/***/ 2562:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.basePrompt = void 0;
+exports.basePrompt = {
+    promptTemplate: "You are a function (input) -> string || null, operating on Github PRs.\nYour input is a file diff in git format and the original file (when applicable) for reference.\nYour goal is ${goal}.\n\nYour output is null when there is no need to comment because the code looks good.\n\nWhen you do generate a string for commenting, consider these requirements:\n- be concise, use short sentences and abbreviations\n- use a developer tone of voice\n- be empathic towards the original author\n- limit your review to the scope of the diff\n- minimise the comment size\n\nThis is the diff to comment:\n\n ${diff}"
+};
+
+
+/***/ }),
+
+/***/ 9344:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.modernizeCodePrompt = void 0;
+exports.modernizeCodePrompt = {
+    goal: "to spot code that can be modernised (using newer standards)",
+    name: "code modernization"
+};
+
+
+/***/ }),
+
+/***/ 7817:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.srpPrompt = void 0;
+exports.srpPrompt = {
+    goal: "to spot (severe only) violations to the single responsibility principles",
+    name: "SRP"
+};
+
+
+/***/ }),
+
+/***/ 8959:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.variableNamingPrompt = void 0;
+exports.variableNamingPrompt = {
+    goal: " to spot bad naming to classes, methods, variables and properties (based on readability and code style principles) and generate comments for the diff",
+    name: "variable naming"
+};
+
+
+/***/ }),
+
 /***/ 3187:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -209,22 +286,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Reviewer = void 0;
-const p_limit_1 = __importDefault(__nccwpck_require__(3783));
-const reviewPrompts_1 = __nccwpck_require__(6432);
+const p_limit_1 = __importDefault(__nccwpck_require__(7684));
+const prompts_1 = __nccwpck_require__(4272);
 const openaiClient_1 = __nccwpck_require__(8426);
-const octokit_1 = __nccwpck_require__(3258);
+const core_1 = __nccwpck_require__(2186);
 class Reviewer {
     options;
-    basePrompt = reviewPrompts_1.templatePrompt;
-    reviewPrompts = reviewPrompts_1.reviewPrompts;
+    basePrompt = prompts_1.templatePrompt;
+    reviewPrompts = prompts_1.reviewPrompts;
     openaiConcurrencyLimit;
-    githubConcurrencyLimit;
     promptFactory;
     constructor(options) {
         this.options = options;
         this.openaiConcurrencyLimit = (0, p_limit_1.default)(options.openaiConcurrencyLimit);
-        this.githubConcurrencyLimit = (0, p_limit_1.default)(options.githubConcurrencyLimit);
-        this.promptFactory = new reviewPrompts_1.PromptFactory({
+        this.promptFactory = new prompts_1.PromptFactory({
             basePrompt: this.basePrompt,
         });
     }
@@ -249,24 +324,15 @@ class Reviewer {
         }
         return prompts;
     }
-    async postComment(comment, commits, context) {
-        return await octokit_1.octokit.pulls.createReviewComment({
-            repo: context.repo.repo,
-            owner: context.repo.owner,
-            pull_number: context.payload.pull_request.number,
-            commit_id: commits[commits.length - 1].sha,
-            path: comment.fileName,
-            body: comment.comment,
-            position: comment.patch.split('\n').length - 1,
-        });
-    }
-    async review(acceptedFiles, commits, context) {
+    async getReviewComments(acceptedFiles) {
         const prompts = this.buildPrompts(acceptedFiles);
+        (0, core_1.info)(`Generated ${prompts.length} prompts`);
         const reviewPromises = prompts.map((prompt) => this.openaiConcurrencyLimit(() => this.getCommentFromGPT(prompt)));
         const reviewComments = await Promise.all(reviewPromises);
+        (0, core_1.info)(`Generated ${reviewComments.length} comments`);
         const comments = reviewComments.filter((comment) => comment.comment !== 'null');
-        const commentsPromises = comments.map((comment) => this.githubConcurrencyLimit(() => this.postComment(comment, commits, context)));
-        await Promise.all(commentsPromises);
+        (0, core_1.info)(`Filtered (non 'null') ${comments.length} comments`);
+        return comments;
     }
 }
 exports.Reviewer = Reviewer;
@@ -19189,6 +19255,85 @@ module.exports = {
   trim: trim,
   stripBOM: stripBOM
 };
+
+
+/***/ }),
+
+/***/ 7684:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const Queue = __nccwpck_require__(5185);
+
+const pLimit = concurrency => {
+	if (!((Number.isInteger(concurrency) || concurrency === Infinity) && concurrency > 0)) {
+		throw new TypeError('Expected `concurrency` to be a number from 1 and up');
+	}
+
+	const queue = new Queue();
+	let activeCount = 0;
+
+	const next = () => {
+		activeCount--;
+
+		if (queue.size > 0) {
+			queue.dequeue()();
+		}
+	};
+
+	const run = async (fn, resolve, ...args) => {
+		activeCount++;
+
+		const result = (async () => fn(...args))();
+
+		resolve(result);
+
+		try {
+			await result;
+		} catch {}
+
+		next();
+	};
+
+	const enqueue = (fn, resolve, ...args) => {
+		queue.enqueue(run.bind(null, fn, resolve, ...args));
+
+		(async () => {
+			// This function needs to wait until the next microtask before comparing
+			// `activeCount` to `concurrency`, because `activeCount` is updated asynchronously
+			// when the run function is dequeued and called. The comparison in the if-statement
+			// needs to happen asynchronously as well to get an up-to-date value for `activeCount`.
+			await Promise.resolve();
+
+			if (activeCount < concurrency && queue.size > 0) {
+				queue.dequeue()();
+			}
+		})();
+	};
+
+	const generator = (fn, ...args) => new Promise(resolve => {
+		enqueue(fn, resolve, ...args);
+	});
+
+	Object.defineProperties(generator, {
+		activeCount: {
+			get: () => activeCount
+		},
+		pendingCount: {
+			get: () => queue.size
+		},
+		clearQueue: {
+			value: () => {
+				queue.clear();
+			}
+		}
+	});
+
+	return generator;
+};
+
+module.exports = pLimit;
 
 
 /***/ }),
@@ -43355,6 +43500,81 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 5185:
+/***/ ((module) => {
+
+class Node {
+	/// value;
+	/// next;
+
+	constructor(value) {
+		this.value = value;
+
+		// TODO: Remove this when targeting Node.js 12.
+		this.next = undefined;
+	}
+}
+
+class Queue {
+	// TODO: Use private class fields when targeting Node.js 12.
+	// #_head;
+	// #_tail;
+	// #_size;
+
+	constructor() {
+		this.clear();
+	}
+
+	enqueue(value) {
+		const node = new Node(value);
+
+		if (this._head) {
+			this._tail.next = node;
+			this._tail = node;
+		} else {
+			this._head = node;
+			this._tail = node;
+		}
+
+		this._size++;
+	}
+
+	dequeue() {
+		const current = this._head;
+		if (!current) {
+			return;
+		}
+
+		this._head = this._head.next;
+		this._size--;
+		return current.value;
+	}
+
+	clear() {
+		this._head = undefined;
+		this._tail = undefined;
+		this._size = 0;
+	}
+
+	get size() {
+		return this._size;
+	}
+
+	* [Symbol.iterator]() {
+		let current = this._head;
+
+		while (current) {
+			yield current.value;
+			current = current.next;
+		}
+	}
+}
+
+module.exports = Queue;
+
+
+/***/ }),
+
 /***/ 9975:
 /***/ ((module) => {
 
@@ -43579,160 +43799,6 @@ module.exports = require("zlib");
 
 /***/ }),
 
-/***/ 3783:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-"use strict";
-// ESM COMPAT FLAG
-__nccwpck_require__.r(__webpack_exports__);
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "default": () => (/* binding */ pLimit)
-});
-
-;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
-/*
-How it works:
-`this.#head` is an instance of `Node` which keeps track of its current value and nests another instance of `Node` that keeps the value that comes after it. When a value is provided to `.enqueue()`, the code needs to iterate through `this.#head`, going deeper and deeper to find the last value. However, iterating through every single item is slow. This problem is solved by saving a reference to the last value as `this.#tail` so that it can reference it to add a new value.
-*/
-
-class Node {
-	value;
-	next;
-
-	constructor(value) {
-		this.value = value;
-	}
-}
-
-class Queue {
-	#head;
-	#tail;
-	#size;
-
-	constructor() {
-		this.clear();
-	}
-
-	enqueue(value) {
-		const node = new Node(value);
-
-		if (this.#head) {
-			this.#tail.next = node;
-			this.#tail = node;
-		} else {
-			this.#head = node;
-			this.#tail = node;
-		}
-
-		this.#size++;
-	}
-
-	dequeue() {
-		const current = this.#head;
-		if (!current) {
-			return;
-		}
-
-		this.#head = this.#head.next;
-		this.#size--;
-		return current.value;
-	}
-
-	clear() {
-		this.#head = undefined;
-		this.#tail = undefined;
-		this.#size = 0;
-	}
-
-	get size() {
-		return this.#size;
-	}
-
-	* [Symbol.iterator]() {
-		let current = this.#head;
-
-		while (current) {
-			yield current.value;
-			current = current.next;
-		}
-	}
-}
-
-;// CONCATENATED MODULE: ./node_modules/p-limit/index.js
-
-
-function pLimit(concurrency) {
-	if (!((Number.isInteger(concurrency) || concurrency === Number.POSITIVE_INFINITY) && concurrency > 0)) {
-		throw new TypeError('Expected `concurrency` to be a number from 1 and up');
-	}
-
-	const queue = new Queue();
-	let activeCount = 0;
-
-	const next = () => {
-		activeCount--;
-
-		if (queue.size > 0) {
-			queue.dequeue()();
-		}
-	};
-
-	const run = async (fn, resolve, args) => {
-		activeCount++;
-
-		const result = (async () => fn(...args))();
-
-		resolve(result);
-
-		try {
-			await result;
-		} catch {}
-
-		next();
-	};
-
-	const enqueue = (fn, resolve, args) => {
-		queue.enqueue(run.bind(undefined, fn, resolve, args));
-
-		(async () => {
-			// This function needs to wait until the next microtask before comparing
-			// `activeCount` to `concurrency`, because `activeCount` is updated asynchronously
-			// when the run function is dequeued and called. The comparison in the if-statement
-			// needs to happen asynchronously as well to get an up-to-date value for `activeCount`.
-			await Promise.resolve();
-
-			if (activeCount < concurrency && queue.size > 0) {
-				queue.dequeue()();
-			}
-		})();
-	};
-
-	const generator = (fn, ...args) => new Promise(resolve => {
-		enqueue(fn, resolve, args);
-	});
-
-	Object.defineProperties(generator, {
-		activeCount: {
-			get: () => activeCount,
-		},
-		pendingCount: {
-			get: () => queue.size,
-		},
-		clearQueue: {
-			value: () => {
-				queue.clear();
-			},
-		},
-	});
-
-	return generator;
-}
-
-
-/***/ }),
-
 /***/ 3765:
 /***/ ((module) => {
 
@@ -43790,99 +43856,17 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__nccwpck_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__nccwpck_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
-(() => {
-"use strict";
-var exports = __webpack_exports__;
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const options_1 = __nccwpck_require__(1353);
-const core_1 = __nccwpck_require__(2186);
-const github_1 = __nccwpck_require__(5438);
-const octokit_1 = __nccwpck_require__(3258);
-const utils_1 = __nccwpck_require__(918);
-const reviewer_1 = __nccwpck_require__(3187);
-(async () => {
-    try {
-        const context = github_1.context;
-        const repo = context.repo;
-        if ((0, utils_1.canRun)(context)) {
-            const options = new options_1.Options({
-                openaiModel: (0, core_1.getInput)('openai_model'),
-                openaiApiBaseUrl: (0, core_1.getInput)('openai_api_base_url'),
-                openaiConcurrencyLimit: (0, core_1.getInput)('openai_concurrency_limit'),
-                openaiModelTemperature: (0, core_1.getInput)('openai_model_temperature'),
-                openaiRetries: (0, core_1.getInput)('openai_retries'),
-                openaiTimeoutMs: (0, core_1.getInput)('openai_timeout_ms'),
-                githubConcurrencyLimit: (0, core_1.getInput)('github_concurrency_limit'),
-            });
-            const targetBranchDiff = await octokit_1.octokit.repos.compareCommits({
-                owner: repo.owner,
-                repo: repo.repo,
-                base: context.payload.pull_request.base.sha,
-                head: context.payload.pull_request.head.sha,
-            });
-            (0, core_1.info)(`Running with options: ${JSON.stringify(options)}`);
-            const { files: changedFiles, commits } = targetBranchDiff.data;
-            if (!changedFiles?.length) {
-                (0, core_1.info)('No changed files found');
-                return;
-            }
-            (0, core_1.info)(`Found ${changedFiles.length} changed files`);
-            (0, core_1.info)(`Changed files: ${JSON.stringify(changedFiles)}`);
-            const acceptedFiles = (0, utils_1.filterAcceptedFiles)(changedFiles);
-            (0, core_1.info)(`Found ${acceptedFiles.length} accepted files`);
-            (0, core_1.info)(`Accepted files: ${JSON.stringify(acceptedFiles)}`);
-            const reviewer = new reviewer_1.Reviewer(options);
-            await reviewer.review(acceptedFiles, commits, context);
-        }
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            (0, core_1.setFailed)(`Failed to run: ${error.message}, backtrace: ${error.stack}`);
-        }
-        else {
-            (0, core_1.setFailed)(`Failed to run: ${error}`);
-        }
-    }
-})();
-
-})();
-
-module.exports = __webpack_exports__;
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __nccwpck_require__(4822);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
 /******/ })()
 ;
