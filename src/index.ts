@@ -14,7 +14,7 @@ import pLimit from 'p-limit';
     if (canRun(context)) {
       const options: Options = new Options({
         openai_Model: getInput('openai_model'),
-        openaiApiBaseUrl: getInput('openai_api_base_url'),
+        openai_Api_BaseUrl: getInput('openai_api_base_url'),
         openaiConcurrencyLimit: getInput('openai_concurrency_limit'),
         openaiModelTemperature: getInput('openai_model_temperature'),
         github_Concurrency_Limit: getInput('github_concurrency_limit'),
