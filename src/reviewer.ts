@@ -14,11 +14,9 @@ export class ReviewComment implements CommentSchema {
   severity: number;
   startLine: number;
   fileName: string;
-  startSide: 'LEFT' | 'RIGHT';
 
   constructor(comment: CommentSchema, fileName: string) {
     this.fileName = fileName;
-    this.startSide = 'RIGHT';
     this.message = comment.message;
     this.startLine = comment.startLine;
     this.endLine = comment.endLine;

@@ -8,8 +8,7 @@ const generateCommentData = (comment: ReviewComment) => {
   return {
     path: comment.fileName,
     body: comment.message,
-    start_line: comment.startLine,
-    start_side: comment.startSide,
+    position: comment.startLine,
   }
 }
 
