@@ -18,16 +18,17 @@ const utils_1 = __nccwpck_require__(918);
 const reviewer_1 = __nccwpck_require__(3187);
 const p_limit_1 = __importDefault(__nccwpck_require__(7684));
 (async () => {
+    let doneWithErrors = false;
     try {
         const context = github_1.context;
         const repo = context.repo;
         if ((0, utils_1.canRun)(context)) {
             const options = new options_1.Options({
-                openaiModel: (0, core_1.getInput)('openai_model'),
-                openaiApiBaseUrl: (0, core_1.getInput)('openai_api_base_url'),
-                openaiConcurrencyLimit: (0, core_1.getInput)('openai_concurrency_limit'),
-                openaiModelTemperature: (0, core_1.getInput)('openai_model_temperature'),
-                githubConcurrencyLimit: (0, core_1.getInput)('github_concurrency_limit'),
+                openaiModel: process.env.OPENAI_MODEL,
+                openaiApiBaseUrl: process.env.OPENAI_API_BASE_URL,
+                openaiConcurrencyLimit: process.env.OPENAI_CONCURRENCY_LIMIT,
+                openaiModelTemperature: process.env.OPENAI_MODEL_TEMPERATURE,
+                githubConcurrencyLimit: process.env.GITHUB_CONCURRENCY_LIMIT,
             });
             (0, core_1.info)(`Running with options: ${JSON.stringify(options)}`);
             const targetBranchDiff = await octokit_1.octokit.repos.compareCommits({
@@ -55,6 +56,7 @@ const p_limit_1 = __importDefault(__nccwpck_require__(7684));
         }
     }
     catch (e) {
+        doneWithErrors = true;
         if (e instanceof Error) {
             (0, core_1.error)(e);
         }
@@ -63,7 +65,12 @@ const p_limit_1 = __importDefault(__nccwpck_require__(7684));
         }
     }
     finally {
-        (0, core_1.info)('Done');
+        if (doneWithErrors) {
+            (0, core_1.warning)('Done with errors.');
+        }
+        else {
+            (0, core_1.info)('Done.');
+        }
     }
 })();
 
