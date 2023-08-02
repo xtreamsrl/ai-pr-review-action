@@ -7,6 +7,7 @@ import { Reviewer } from './reviewer';
 import pLimit from 'p-limit';
 
 (async () => {
+  let doneWithErrors = false;
   try {
     const context = GITHUB_CONTEXT;
     const repo = context.repo;
@@ -49,13 +50,18 @@ import pLimit from 'p-limit';
       await Promise.all(commentsPromises);
     }
   } catch (e: unknown) {
+    doneWithErrors = true;
     if (e instanceof Error) {
       error(e)
     } else {
       error(`Failed to run with error: ${e}`);
     }
   } finally {
-    // Always log that we're done and exit gracefully, even if we failed
-    info('Done');
+    // Always log that we're done and exit gracefully. Even if we failed we don't want to fail the action.
+    if (doneWithErrors) {
+      error('Done with errors');
+    } else {
+      info('Done');
+    }
   }
 })();
