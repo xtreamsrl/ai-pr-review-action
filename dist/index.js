@@ -1,103 +1,39 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 4822:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const options_1 = __nccwpck_require__(1353);
-const core_1 = __nccwpck_require__(2186);
-const github_1 = __nccwpck_require__(5438);
-const octokit_1 = __nccwpck_require__(3258);
-const utils_1 = __nccwpck_require__(918);
-const reviewer_1 = __nccwpck_require__(3187);
-const p_limit_1 = __importDefault(__nccwpck_require__(7684));
-(async () => {
-    let doneWithErrors = false;
-    try {
-        const context = github_1.context;
-        const repo = context.repo;
-        if ((0, utils_1.canRun)(context)) {
-            const options = new options_1.Options({
-                openaiModel: process.env.OPENAI_MODEL,
-                openaiApiBaseUrl: process.env.OPENAI_API_BASE_URL,
-                openaiConcurrencyLimit: process.env.OPENAI_CONCURRENCY_LIMIT,
-                openaiModelTemperature: process.env.OPENAI_MODEL_TEMPERATURE,
-                githubConcurrencyLimit: process.env.GITHUB_CONCURRENCY_LIMIT,
-            });
-            (0, core_1.info)(`Running with options: ${JSON.stringify(options)}`);
-            const targetBranchDiff = await octokit_1.octokit.repos.compareCommits({
-                owner: repo.owner,
-                repo: repo.repo,
-                base: context.payload.pull_request.base.sha,
-                head: context.payload.pull_request.head.sha,
-            });
-            const { files: changedFiles, commits } = targetBranchDiff.data;
-            if (!changedFiles?.length) {
-                (0, core_1.info)('No changed files found');
-                return;
-            }
-            (0, core_1.info)(`Found ${changedFiles.length} changed files`);
-            (0, core_1.info)(`Changed files: ${JSON.stringify(changedFiles.map((file) => file.filename))}`);
-            const acceptedFiles = (0, utils_1.filterAcceptedFiles)(changedFiles);
-            (0, core_1.info)(`Found ${acceptedFiles.length} accepted files`);
-            (0, core_1.info)(`Accepted files: ${JSON.stringify(acceptedFiles.map((file) => file.filename))}`);
-            const reviewer = new reviewer_1.Reviewer(options);
-            const comments = await reviewer.getReviewComments(acceptedFiles);
-            (0, core_1.info)(`Posting ${comments.length} review comments`);
-            const githubConcurrencyLimit = (0, p_limit_1.default)(options.githubConcurrencyLimit);
-            const commentsPromises = comments.map((comment) => githubConcurrencyLimit(() => (0, octokit_1.postComment)(comment, commits, context)));
-            await Promise.all(commentsPromises);
-        }
-    }
-    catch (e) {
-        doneWithErrors = true;
-        if (e instanceof Error) {
-            (0, core_1.error)(e);
-        }
-        else {
-            (0, core_1.error)(`Failed to run with error: ${e}`);
-        }
-    }
-    finally {
-        if (doneWithErrors) {
-            (0, core_1.warning)('Done with errors.');
-        }
-        else {
-            (0, core_1.info)('Done.');
-        }
-    }
-})();
-
-
-/***/ }),
-
 /***/ 3258:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.postComment = exports.octokit = void 0;
+exports.submitReview = exports.octokit = void 0;
 const action_1 = __nccwpck_require__(1231);
 exports.octokit = new action_1.Octokit();
-async function postComment(comment, commits, context) {
-    return await exports.octokit.pulls.createReviewComment({
-        repo: context.repo.repo,
-        owner: context.repo.owner,
-        pull_number: context.payload.pull_request.number,
-        commit_id: commits[commits.length - 1].sha,
+const generateCommentData = (comment) => {
+    return {
         path: comment.fileName,
-        body: comment.comment,
+        body: comment.message,
         position: comment.patch.split('\n').length - 1,
+    };
+};
+async function submitReview(comments, prNumber, commitId, context) {
+    const review = await exports.octokit.pulls.createReview({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        pull_number: prNumber,
+        commit_id: commitId,
+        comments: comments.map(comment => generateCommentData(comment))
+    });
+    await exports.octokit.pulls.submitReview({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        pull_number: prNumber,
+        review_id: review.data.id,
+        event: 'COMMENT'
     });
 }
-exports.postComment = postComment;
+exports.submitReview = submitReview;
 
 
 /***/ }),
@@ -318,7 +254,7 @@ class Reviewer {
         });
         return {
             ...inputPrompt,
-            comment: chatCompletion.data.choices[0].message?.content ?? 'null'
+            message: chatCompletion.data.choices[0].message?.content ?? 'null'
         };
     }
     buildPrompts(acceptedFiles) {
@@ -337,7 +273,7 @@ class Reviewer {
         const reviewPromises = prompts.map((prompt) => this.openaiConcurrencyLimit(() => this.getCommentFromGPT(prompt)));
         const reviewComments = await Promise.all(reviewPromises);
         (0, core_1.info)(`Generated ${reviewComments.length} comments`);
-        const comments = reviewComments.filter((comment) => comment.comment !== 'null');
+        const comments = reviewComments.filter((comment) => comment.message !== 'null');
         (0, core_1.info)(`Filtered (non 'null') ${comments.length} comments`);
         return comments;
     }
@@ -43868,12 +43804,78 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(4822);
-/******/ 	module.exports = __webpack_exports__;
-/******/ 	
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+var exports = __webpack_exports__;
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const options_1 = __nccwpck_require__(1353);
+const core_1 = __nccwpck_require__(2186);
+const github_1 = __nccwpck_require__(5438);
+const octokit_1 = __nccwpck_require__(3258);
+const utils_1 = __nccwpck_require__(918);
+const reviewer_1 = __nccwpck_require__(3187);
+(async () => {
+    let doneWithErrors = false;
+    try {
+        const context = github_1.context;
+        const repo = context.repo;
+        if ((0, utils_1.canRun)(context)) {
+            const options = new options_1.Options({
+                openaiModel: process.env.OPENAI_MODEL,
+                openaiApiBaseUrl: process.env.OPENAI_API_BASE_URL,
+                openaiConcurrencyLimit: process.env.OPENAI_CONCURRENCY_LIMIT,
+                openaiModelTemperature: process.env.OPENAI_MODEL_TEMPERATURE,
+                githubConcurrencyLimit: process.env.GITHUB_CONCURRENCY_LIMIT,
+            });
+            (0, core_1.info)(`Running with options: ${JSON.stringify(options)}`);
+            const targetBranchDiff = await octokit_1.octokit.repos.compareCommits({
+                owner: repo.owner,
+                repo: repo.repo,
+                base: context.payload.pull_request.base.sha,
+                head: context.payload.pull_request.head.sha,
+            });
+            const { files: changedFiles, commits } = targetBranchDiff.data;
+            if (!changedFiles?.length) {
+                (0, core_1.info)('No changed files found');
+                return;
+            }
+            (0, core_1.info)(`Found ${changedFiles.length} changed files`);
+            (0, core_1.info)(`Changed files: ${JSON.stringify(changedFiles.map((file) => file.filename))}`);
+            const acceptedFiles = (0, utils_1.filterAcceptedFiles)(changedFiles);
+            (0, core_1.info)(`Found ${acceptedFiles.length} accepted files`);
+            (0, core_1.info)(`Accepted files: ${JSON.stringify(acceptedFiles.map((file) => file.filename))}`);
+            const reviewer = new reviewer_1.Reviewer(options);
+            const comments = await reviewer.getReviewComments(acceptedFiles);
+            const prNumber = context.payload.pull_request.number;
+            const commitId = commits[commits.length - 1].sha;
+            (0, core_1.info)(`Submitting review for PR #${prNumber}, total comments: ${comments.length}`);
+            await (0, octokit_1.submitReview)(comments, prNumber, commitId, context);
+        }
+    }
+    catch (e) {
+        doneWithErrors = true;
+        if (e instanceof Error) {
+            (0, core_1.error)(e);
+        }
+        else {
+            (0, core_1.error)(`Failed to run with error: ${e}`);
+        }
+    }
+    finally {
+        if (doneWithErrors) {
+            (0, core_1.warning)('Done with errors.');
+        }
+        else {
+            (0, core_1.info)('Done.');
+        }
+    }
+})();
+
+})();
+
+module.exports = __webpack_exports__;
 /******/ })()
 ;
