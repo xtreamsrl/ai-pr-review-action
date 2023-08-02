@@ -1,5 +1,5 @@
 import { Options } from './options';
-import { getInput, info, error, setFailed } from '@actions/core';
+import { error, info, warning } from '@actions/core';
 import { context as GITHUB_CONTEXT } from '@actions/github';
 import { octokit, postComment } from './octokit';
 import { canRun, filterAcceptedFiles } from './utils';
@@ -14,11 +14,11 @@ import pLimit from 'p-limit';
 
     if (canRun(context)) {
       const options: Options = new Options({
-        openaiModel: getInput('openai_model'),
-        openaiApiBaseUrl: getInput('openai_api_base_url'),
-        openaiConcurrencyLimit: getInput('openai_concurrency_limit'),
-        openaiModelTemperature: getInput('openai_model_temperature'),
-        githubConcurrencyLimit: getInput('github_concurrency_limit'),
+        openaiModel: process.env.OPENAI_MODEL!,
+        openaiApiBaseUrl: process.env.OPENAI_API_BASE_URL!,
+        openaiConcurrencyLimit: process.env.OPENAI_CONCURRENCY_LIMIT!,
+        openaiModelTemperature: process.env.OPENAI_MODEL_TEMPERATURE!,
+        githubConcurrencyLimit: process.env.GITHUB_CONCURRENCY_LIMIT!,
       });
       info(`Running with options: ${JSON.stringify(options)}`);
 
@@ -44,7 +44,7 @@ import pLimit from 'p-limit';
       const reviewer = new Reviewer(options);
       const comments = await reviewer.getReviewComments(acceptedFiles);
 
-      info(`Posting ${comments.length} review comments`)
+      info(`Posting ${comments.length} review comments`);
       const githubConcurrencyLimit = pLimit(options.githubConcurrencyLimit);
       const commentsPromises = comments.map((comment) => githubConcurrencyLimit(() => postComment(comment, commits, context)));
       await Promise.all(commentsPromises);
@@ -52,16 +52,16 @@ import pLimit from 'p-limit';
   } catch (e: unknown) {
     doneWithErrors = true;
     if (e instanceof Error) {
-      error(e)
+      error(e);
     } else {
       error(`Failed to run with error: ${e}`);
     }
   } finally {
     // Always log that we're done and exit gracefully. Even if we failed we don't want to fail the action.
     if (doneWithErrors) {
-      error('Done with errors');
+      warning('Done with errors.');
     } else {
-      info('Done');
+      info('Done.');
     }
   }
 })();
