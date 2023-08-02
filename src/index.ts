@@ -15,7 +15,7 @@ import pLimit from 'p-limit';
     if (canRun(context)) {
       const options: Options = new Options({
         openai_Model: process.env.OPENAI_MODEL!,
-        openaiApiBaseUrl: process.env.OPENAI_API_BASE_URL!,
+        openai_Api_BaseUrl: process.env.OPENAI_API_BASE_URL!,
         openaiConcurrencyLimit: process.env.OPENAI_CONCURRENCY_LIMIT!,
         openaiModelTemperature: process.env.OPENAI_MODEL_TEMPERATURE!,
         github_Concurrency_Limit: process.env.GITHUB_CONCURRENCY_LIMIT!,

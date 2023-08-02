@@ -10,13 +10,13 @@ export class Options {
   githubConcurrencyLimit: number;
 
   constructor(params: {
-    openaiApiBaseUrl: string;
+    openai_Api_BaseUrl: string;
     openai_Model: string;
     openaiModelTemperature: string;
     openaiConcurrencyLimit: string;
     github_Concurrency_Limit: string;
   }) {
-    this.openaiApiBaseUrl = params.openaiApiBaseUrl;
+    this.openaiApiBaseUrl = params.openai_Api_BaseUrl;
     this.openaiModel = Options.parseGptModel(params.openai_Model);
     this.openaiModelTemperature = parseFloat(params.openaiModelTemperature);
     this.openaiConcurrencyLimit = parseInt(params.openaiConcurrencyLimit);
