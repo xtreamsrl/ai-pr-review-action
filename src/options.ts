@@ -1,5 +1,5 @@
 export const SUPPORTED_EVENTS = ['pull_request_target'];
-export const SUPPORTED_ACTIONS = ['opened'];
+export const SUPPORTED_ACTIONS = ['opened', 'labeled'];
 export const SUPPORTED_FILE_EXTENSIONS = ['.js', '.ts', '.py', '.java'];
 
 export class Options {
