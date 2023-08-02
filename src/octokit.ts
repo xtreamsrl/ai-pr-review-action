@@ -4,14 +4,31 @@ import { ReviewComment } from './reviewer';
 
 export const octokit = new Octokit();
 
-export async function postComment(comment: ReviewComment, commits: { sha: string }[], context: ContextWithPullRequest) {
-  return await octokit.pulls.createReviewComment({
-    repo: context.repo.repo,
-    owner: context.repo.owner,
-    pull_number: context.payload.pull_request.number,
-    commit_id: commits[commits.length - 1].sha,
+const generateCommentData = (comment: ReviewComment) => {
+  return {
     path: comment.fileName,
-    body: comment.comment,
+    body: comment.message,
     position: comment.patch.split('\n').length - 1,
+  }
+}
+
+export async function submitReview(comments: ReviewComment[], prNumber: number, commitId: string, context: ContextWithPullRequest) {
+  const review = await octokit.pulls.createReview({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    pull_number: prNumber,
+    commit_id: commitId,
+    comments: comments.map(comment =>
+      generateCommentData(comment)
+    )
   });
+  await octokit.pulls.submitReview({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    // eslint-disable-next-line camelcase
+    pull_number: prNumber,
+    // eslint-disable-next-line camelcase
+    review_id: review.data.id,
+    event: 'COMMENT'
+  })
 }

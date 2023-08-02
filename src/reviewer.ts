@@ -5,7 +5,7 @@ import { openaiClient } from './openaiClient';
 import { info } from '@actions/core';
 
 export type ReviewComment = {
-  comment: string;
+  message: string;
   fileName: string;
   patch: string;
   prompt: string;
@@ -34,7 +34,7 @@ export class Reviewer {
     });
     return {
       ...inputPrompt,
-      comment: chatCompletion.data.choices[0].message?.content ?? 'null'
+      message: chatCompletion.data.choices[0].message?.content ?? 'null'
     }
   }
 
@@ -55,7 +55,7 @@ export class Reviewer {
     const reviewPromises = prompts.map((prompt) => this.openaiConcurrencyLimit(() => this.getCommentFromGPT(prompt)));
     const reviewComments = await Promise.all(reviewPromises);
     info(`Generated ${reviewComments.length} comments`);
-    const comments = reviewComments.filter((comment) => comment.comment !== 'null');
+    const comments = reviewComments.filter((comment) => comment.message !== 'null');
     info(`Filtered (non 'null') ${comments.length} comments`);
     return comments;
   }

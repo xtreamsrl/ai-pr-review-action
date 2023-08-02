@@ -1,10 +1,9 @@
 import { Options } from './options';
 import { error, info, warning } from '@actions/core';
 import { context as GITHUB_CONTEXT } from '@actions/github';
-import { octokit, postComment } from './octokit';
+import { octokit, submitReview } from './octokit';
 import { canRun, filterAcceptedFiles } from './utils';
 import { Reviewer } from './reviewer';
-import pLimit from 'p-limit';
 
 (async () => {
   let doneWithErrors = false;
@@ -44,10 +43,10 @@ import pLimit from 'p-limit';
       const reviewer = new Reviewer(options);
       const comments = await reviewer.getReviewComments(acceptedFiles);
 
-      info(`Posting ${comments.length} review comments`);
-      const githubConcurrencyLimit = pLimit(options.githubConcurrencyLimit);
-      const commentsPromises = comments.map((comment) => githubConcurrencyLimit(() => postComment(comment, commits, context)));
-      await Promise.all(commentsPromises);
+      const prNumber = context.payload.pull_request.number;
+      const commitId = commits[commits.length - 1].sha;
+      info(`Submitting review for PR #${prNumber}, total comments: ${comments.length}`)
+      await submitReview(comments, prNumber, commitId, context);
     }
   } catch (e: unknown) {
     doneWithErrors = true;
