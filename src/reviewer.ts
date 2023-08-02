@@ -32,7 +32,7 @@ export class Reviewer {
 
   constructor(options: Options) {
     this.options = options;
-    const model = createOpenAILanguageModel(options.openaiApiKey, options.openaiModel);
+    const model = createOpenAILanguageModel(options.openai_Api_Key, options.openaiModel);
     const schema = fs.readFileSync(path.join(__dirname, 'commentSchema.ts'), 'utf8');
     this.translator = createJsonTranslator<CommentSchema>(model, schema, 'CommentSchema');
   }
