@@ -1,5 +1,5 @@
 import { Options } from './options';
-import { error, info, warning } from '@actions/core';
+import { debug, error, info, warning } from '@actions/core';
 import { context as GITHUB_CONTEXT } from '@actions/github';
 import { octokit, submitReview } from './octokit';
 import { canRun, filterAcceptedFiles } from './utils';
@@ -38,6 +38,7 @@ import { Reviewer } from './reviewer';
       info(`Accepted files: ${JSON.stringify(acceptedFiles.map((file) => file.filename))}`);
 
       const reviewer = new Reviewer(options);
+      debug(JSON.stringify(acceptedFiles));
       const comments = await reviewer.getReviewComments(acceptedFiles);
 
       const prNumber = context.payload.pull_request.number;
