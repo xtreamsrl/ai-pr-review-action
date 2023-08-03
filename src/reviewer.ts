@@ -35,8 +35,8 @@ export class Reviewer {
     this.translator = createJsonTranslator<CommentSchema>(model, schema, 'CommentSchema');
   }
 
-  private async getComment(prompt: string) {
-    return await this.translator.translate(prompt);
+  private getComment(prompt: string) {
+    return this.translator.translate(prompt);
   }
 
   private splitPatch(patch: string): string[] {
