@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "prepackage": "cp ./src/commentSchema.ts ./src/singleDiffPrompt.md ./dist/",
-    "package": "ncc build ./lib/index.js --license licenses.txt"
+    "package": "npm run build && ncc build ./lib/index.js --license licenses.txt"
   },
   "keywords": [],
   "author": "",
