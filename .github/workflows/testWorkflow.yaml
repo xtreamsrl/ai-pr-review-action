@@ -6,7 +6,7 @@ on:
 
 jobs:
   ai-pr-review:
-    if: ${{ github.event_name == 'pull_request' && (github.event.action == 'opened' || (github.event.action == 'labeled' && github.event.label.name == 'ai-review')) }}
+    if: ${{ github.event.action == 'opened' || (github.event.action == 'labeled' && github.event.label.name == 'ai-review') }}
     runs-on: ubuntu-latest
     name: AI PR Reviewer
     steps:
