@@ -1,12 +1,10 @@
 import { Options } from './options';
 import { SingleDiffPrompt } from './prompts';
 import { info, warning } from '@actions/core';
-import { createOpenAILanguageModel } from 'typechat/dist/model';
 import fs from 'fs';
 import path from 'node:path';
-import { createJsonTranslator, TypeChatJsonTranslator } from 'typechat';
+import { createJsonTranslator, TypeChatJsonTranslator, createOpenAILanguageModel, Error } from 'typechat';
 import { CommentSchema } from './commentSchema';
-import { Error } from 'typechat/dist/result';
 
 export class ReviewComment implements CommentSchema {
   endLine: number;
