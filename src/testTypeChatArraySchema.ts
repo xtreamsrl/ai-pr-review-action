@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'node:path';
 import { createJsonTranslator } from 'typechat';
 import { CommentArraySchema } from './commentArraySchema';
-import { SingleDiffPrompt } from './prompts';
+import { DiffPrompt } from './prompts';
 
 (async () => {
   const files = [
@@ -36,7 +36,7 @@ import { SingleDiffPrompt } from './prompts';
   const schema = fs.readFileSync(path.join(__dirname, 'commentArraySchema.ts'), 'utf8');
   const translator = createJsonTranslator<CommentArraySchema>(model, schema, 'CommentArraySchema');
   const multiFileDiff = files.map(file => file.patch).join('\n---\n');
-  const promptRequest = new SingleDiffPrompt().build({diff: multiFileDiff});
+  const promptRequest = new DiffPrompt().build({diff: multiFileDiff});
   const comments = await translator.translate(promptRequest);
   console.log(comments);
 })();

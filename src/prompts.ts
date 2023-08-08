@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import path from 'node:path';
 
-const SINGLE_DIFF_PROMPT_FILENAME = 'singleDiffPrompt.md';
+const DIFF_PROMPT_FILENAME = 'diffPrompt.md';
 
 export class TemplatePrompt<T extends Record<string, string>> {
   private readonly template: string;
@@ -17,9 +17,9 @@ export class TemplatePrompt<T extends Record<string, string>> {
   }
 }
 
-export class SingleDiffPrompt extends TemplatePrompt<{diff: string}> {
+export class DiffPrompt extends TemplatePrompt<{diff: string}> {
   constructor() {
-    const rawTemplatePrompt = fs.readFileSync(path.join(__dirname, SINGLE_DIFF_PROMPT_FILENAME), 'utf8');
+    const rawTemplatePrompt = fs.readFileSync(path.join(__dirname, DIFF_PROMPT_FILENAME), 'utf8');
     super(rawTemplatePrompt);
   }
 }
