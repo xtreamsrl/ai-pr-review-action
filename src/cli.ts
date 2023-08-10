@@ -3,7 +3,7 @@ import { Reviewer } from './reviewer';
 import { Options as Config } from './options';
 import { cliCanRun } from './utils';
 
-type CliOptions = {
+type o = {
   pr: number;
   repository: string;
   owner: string;
@@ -20,7 +20,7 @@ type CliOptions = {
     .requiredOption('-r, --repository <string>', 'Repository name to review')
     .requiredOption('-o, --owner <string>', 'Repository owner')
     .addOption(new Option('-m, --model <string>', 'OpenAI GPT model to use').choices(['gpt-3.5-turbo', 'gpt-4']).makeOptionMandatory(true))
-    .action(async (options: CliOptions) => {
+    .action(async (options: o) => {
       if(cliCanRun()) {
         const config = new Config({
           openaiApiBaseUrl: 'https://api.openai.com/v1',
