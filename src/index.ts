@@ -1,50 +1,24 @@
 import { Options } from './options';
-import { debug, error, info, warning } from '@actions/core';
+import { error, info, warning } from '@actions/core';
 import { context as GITHUB_CONTEXT } from '@actions/github';
-import { octokit, submitReview } from './octokit';
-import { canRun, filterAcceptedFiles } from './utils';
+import { actionCanRun } from './utils';
 import { Reviewer } from './reviewer';
+import { GithubContext } from './octokit';
 
 (async () => {
   let doneWithErrors = false;
   try {
-    const context = GITHUB_CONTEXT;
-    const repo = context.repo;
+    const context: GithubContext = GITHUB_CONTEXT;
 
-    if (canRun(context)) {
+    if (actionCanRun(context)) {
       const options: Options = new Options({
         openaiModel: process.env.OPENAI_MODEL!,
         openaiApiBaseUrl: process.env.OPENAI_API_BASE_URL!,
       });
       info(`Running with options: ${JSON.stringify(options)}`);
 
-      // Fetch the diff between the target branch's base commit and the latest commit of the PR branch
-      const targetBranchDiff = await octokit.repos.compareCommits({
-        owner: repo.owner,
-        repo: repo.repo,
-        base: context.payload.pull_request.base.sha,
-        head: context.payload.pull_request.head.sha,
-      });
-      const { files: changedFiles, commits } = targetBranchDiff.data;
-      if (!changedFiles?.length) {
-        info('No changed files found');
-        return;
-      }
-      info(`Found ${changedFiles.length} changed files`);
-      info(`Changed files: ${JSON.stringify(changedFiles.map((file) => file.filename))}`);
-
-      const acceptedFiles = filterAcceptedFiles(changedFiles);
-      info(`Found ${acceptedFiles.length} accepted files`);
-      info(`Accepted files: ${JSON.stringify(acceptedFiles.map((file) => file.filename))}`);
-
       const reviewer = new Reviewer(options);
-      debug(JSON.stringify(acceptedFiles));
-      const comments = await reviewer.getReviewComments(acceptedFiles);
-
-      const prNumber = context.payload.pull_request.number;
-      const commitId = commits[commits.length - 1].sha;
-      info(`Submitting review for PR #${prNumber}, total comments: ${comments.length}`)
-      await submitReview(comments, prNumber, commitId, context);
+      await reviewer.review(context);
     }
   } catch (e: unknown) {
     doneWithErrors = true;
